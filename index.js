@@ -4,16 +4,45 @@
 */
 
 // ENV
-
-const PORT = 3000;
+const config = require('./config');
+const httpPORT = config.httpPort;
+const httpsPORT = config.httpsPort;
 
 // Dependencies
 const http = require('http');
+const https = require('https');
 const url = require('url');
+const fs = require('fs');
 const StringDecoder = require('string_decoder').StringDecoder;
 
-// The server should respond to all requests with a string
-const server = http.createServer(function(req, res) {
+// Instantiate the HTTP server
+const httpServer = http.createServer(function(req, res) {
+    unifiedServer(req, res);
+});
+
+// Start the server
+httpServer.listen(httpPORT, function(){
+    console.log(`The server is listening on port ${httpPORT}.`);
+});
+
+// Instantiate the HTTPS server
+const httpsServerOptions = {
+    'key': fs.readFileSync('./https/key.pem'),
+    'cert': fs.readFileSync('./https/cert.pem')
+};
+const httpsServer = https.createServer(httpsServerOptions, function(req, res) {
+    unifiedServer(req, res);
+});
+
+// Start the HTTPS server
+httpsServer.listen(httpsPORT, function(){
+    console.log(`The server is listening on port ${httpsPORT}.`);
+});
+
+
+
+// All the server logic for both the http and https servers
+const unifiedServer = function(req, res) {
 
     // Get the URL and parse it
     const parsedUrl = url.parse(req.url, true);
@@ -64,18 +93,13 @@ const server = http.createServer(function(req, res) {
             const payloadString = JSON.stringify(payload);
 
             // Return the response
-            res.setHeader('Content-type', 'application/json');
+            res.setHeader('Content-type', 'application/json'); //tells the browser the type of content
             res.writeHead(statusCode);
             res.end(payloadString);
             console.log(`Returning this response:`, statusCode, payloadString);
         });
     });
-});
-
-// Start the server, and have it listen on port 3000
-server.listen(PORT, function(){
-    console.log(`The server is listening on port ${PORT}`);
-});
+};
 
 // Define handlers
 const handlers = {};
