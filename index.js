@@ -4,7 +4,7 @@
 */
 
 // ENV
-const config = require('./config');
+const config = require('./lib/config');
 const httpPORT = config.httpPort;
 const httpsPORT = config.httpsPort;
 
@@ -14,6 +14,8 @@ const https = require('https');
 const url = require('url');
 const fs = require('fs');
 const StringDecoder = require('string_decoder').StringDecoder;
+const handlers = require('./lib/handlers');
+const helpers = require('./lib/helpers');
 
 // Instantiate the HTTP server
 const httpServer = http.createServer(function(req, res) {
@@ -55,7 +57,7 @@ const unifiedServer = function(req, res) {
     const queryStringObject = parsedUrl.query;
 
     // Get the HTTP Method
-    const method = req.method.toUpperCase();
+    const method = req.method.toLowerCase();
 
     // Get the headers as an object
     const headers = req.headers;
@@ -72,13 +74,13 @@ const unifiedServer = function(req, res) {
         // Chose the handler this request should go to.
         const chosenHandler = typeof(router[trimmedPath]) !== 'undefined' ? router[trimmedPath] : handlers.notFound;
         
-        // Construct data object to send to handler
+        // construct data object to send to handler
         const data = {
             'trimmedPath': trimmedPath,
             'queryStringObject': queryStringObject,
             'method': method,
             'headers': headers,
-            'payload': buffer
+            'payload': helpers.parseJsonToObject(buffer)
         }
 
         // Route the request to the handeler specified in the router
@@ -101,19 +103,9 @@ const unifiedServer = function(req, res) {
     });
 };
 
-// Define handlers
-const handlers = {};
-
-// Ping handler
-handlers.ping = function(data, callback) {
-    callback(200);
-}
-
-handlers.notFound = function(data, callback) {
-    callback(404);
-};
-
 // Define a request router
 const router = {
-    'ping': handlers.ping
+    'ping': handlers.ping,
+    'users': handlers.users,
+    'tokens': handlers.tokens
 };
